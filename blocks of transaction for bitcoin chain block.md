@@ -9,14 +9,26 @@ transaction:
 ```
 Let's dissect the data block aboved piece by piece:
 1, the first four bytes: 01000000 it is the version of the transaction in little endian format
+
 2, the following one byte: 01 is the input count
-3, following chunk of zeros: 0000000000000000000000000000000000000000000000000000000000000000, is the previous transaction hash, sinces its the first transaction of the block, therefore it has not previous transaction and this value is all 0,
+
+3, following chunk of zeros: 0000000000000000000000000000000000000000000000000000000000000000, is the previous transaction hash, 
+sinces its the first transaction of the block, therefore it has not previous transaction and this value is all 0,
+
 4, ffffffff previous transaction index
-5, the following data chunk: 5e03d71b07254d696e656420627920416e74506f6f6c20626a31312f4542312f4144362f43205914293101fabe6d6d678e2c8c34afc36896e7d9402824ed38e856676ee94bfdb0c6c4bcd8b2e5666a0400000000000000c7270000a5e00e00 is input script
+
+5, the following data chunk: 
+5e03d71b07254d696e656420627920416e74506f6f6c20626a31312f4542312f4144362f43205914293101fabe6d6d678e2c8c34afc36896e7d9402824ed38e856676ee94bfdb0c6c4bcd8b2e5666a0400000000000000c7270000a5e00e00
+is input script
+
 6, ffffffff sequence number
+
 7, 01 output count
+
 8, faf20b5800000000 output amount
+
 9, 1976a914338c84849423992471bffb1a54a8d9b1d69dc28a88ac p2pkh scriptpubkey
+
 10, 00000000 lock time
 
 The structure of coinbase transaction is the same as we have seen before, but has some specials:
@@ -94,4 +106,35 @@ scriptSigRawData, err := hex.DecodeString("5e03d71b07254d696e656420627920416e745
 Run the aboved code we have the following output:
 ```go
 Mined by AntPool bj11/EB1/AD6/C Y)1
+```
+Every coinbase transaction has almost the same fields but there is only one field may different, that is the first command of the scriptsig,
+it is in little endian and its value indicate the block number where the coinbase is in on the blockchain,this number also call block height. 
+
+Let's add a method to show this number in transaction.go:
+```go
+func (t *Transaction) CoinBaseHeight() *big.Int {
+	if !t.IsCoinBase() {
+		return nil
+	}
+
+	height := t.txInputs[0].scriptSig.bitcoinOpCode.cmds[0]
+	return LittleEndianToBigInt(height, LITTLE_ENDIAN_4_BYTES)
+}
+```
+Then we can call the method aboved at main.go:
+```go
+func main() {
+	coinBaseTransactionRawData, err := hex.DecodeString("01000000010000000000000000000000000000000000000000000000000000000000000000ffffffff5e03d71b07254d696e656420627920416e74506f6f6c20626a31312f4542312f4144362f43205914293101fabe6d6d678e2c8c34afc36896e7d9402824ed38e856676ee94bfdb0c6c4bcd8b2e5666a0400000000000000c7270000a5e00e00ffffffff01faf20b58000000001976a914338c84849423992471bffb1a54a8d9b1d69dc28a88ac00000000")
+	if err != nil {
+		panic(err)
+	}
+	coinBaseTx := tx.ParseTransaction(coinBaseTransactionRawData)
+    ....
+    blockHeight := coinBaseTx.CoinBaseHeight()
+	fmt.Printf("the block height of the coinbase transaction is %d\n", blockHeight.Int64())
+}
+```
+The result of the coinbase height is :
+```go
+the block height of the coinbase transaction is 119265024
 ```
