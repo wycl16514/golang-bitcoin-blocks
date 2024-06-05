@@ -68,3 +68,30 @@ Then run the aboved code and we get the following result:
 ```go
 is coin base transaction: true
 ```
+
+Since coinbase transaction has not previous transaction and it dosen't need to unlock money from previous transaction, why shoud it have scriptsig? The scriptsig is created by the miner that mine it, we will see what is "mining" at later time.
+And it can be any data that has at least two bytes long and no more than 100 bytes. Let's see what kind of data will contain in the scriptsig, add the following code to script_sig.go:
+```go
+unc (s *ScriptSig) PrintCmd(idx int) {
+	if idx < 0 || idx >= len(s.bitcoinOpCode.cmds) {
+		fmt.Printf("idx out of range")
+	}
+
+	fmt.Printf("%s\n", string(s.bitcoinOpCode.cmds[idx]))
+}
+```
+Then let's print the commands of scriptSig as string:
+```go
+scriptSigRawData, err := hex.DecodeString("5e03d71b07254d696e656420627920416e74506f6f6c20626a31312f4542312f4144362f43205914293101fabe6d6d678e2c8c34afc36896e7d9402824ed38e856676ee94bfdb0c6c4bcd8b2e5666a0400000000000000c7270000a5e00e00")
+	if err != nil {
+		panic(err)
+	}
+	reader := bytes.NewReader(scriptSigRawData)
+	bufReader := bufio.NewReader(reader)
+	scriptSig := tx.NewScriptSig(bufReader)
+	scriptSig.PrintCmd(1)
+```
+Run the aboved code we have the following output:
+```go
+Mined by AntPool bj11/EB1/AD6/C Y)1
+```
