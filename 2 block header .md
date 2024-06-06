@@ -138,3 +138,51 @@ hash:0000000000000000007e9e4c586439b0cdbe13b1370bdd9435d76a644d047523
 
 serialized block data: 020000208ec39428b17323fa0ddec8e887b4a7c53b8c0a0a220cfd0000000000000000005b0750fce0a889502d40508d39576821155e9c9e3f5c3157f961db38fd8b25be1e77a759e93c0118a4ffd71d
 ```
+
+Let's see what those fields used for. The version field used to indicate what kind of feature the block can support, version 2 means the block can support protocol BIP0034,
+this protocol introduce the block height as we have seen aboved, version 3 means the block will support protocol BIP0065 which specified command OP_CHECKLOCKTIMEVERIFY. How the bits
+set of the version will indicate what kind of protocol the miner will support, if the left most threee bits are 001, then the block or the miner will support protocol BIP0009.
+
+Let's add a method to check the version field and find out what kind of protocol the given miner for the block is supporting:
+```go
+func (b *Block) Bip9() bool {
+	//is the miner support BIP0009
+	version := new(big.Int)
+	version.SetBytes(b.version)
+	ver := version.Int64()
+	return (ver >> 29) == 0b001
+}
+
+func (b *Block) Bip91() bool {
+	//is support BIP0091
+	version := new(big.Int)
+	version.SetBytes(b.version)
+	ver := version.Int64()
+	return (ver >> 4 & 1) == 1
+}
+
+func (b *Block) Bip141() bool {
+	//is support BIP0141
+	version := new(big.Int)
+	version.SetBytes(b.version)
+	ver := version.Int64()
+	return (ver >> 1 & 1) == 1
+}
+```
+Then we can call the aboved code in main.go:
+```go
+fmt.Printf("is support BIP0009: %v\n", block.Bip9())
+fmt.Printf("is support BIP0091: %v\n", block.Bip91())
+fmt.Printf("is support BIP0141: %v\n", block.Bip141())
+```
+The result for the aboved code is :
+```g
+is support BIP0009: true
+is support BIP0091: false
+is support BIP0141: true
+```
+
+All blocks are link together with one by one, that's why we call block chain, given one block, we can traverse back to the first block by using the previous block field, we will dive
+deeper to this in later section. Merkle root is used for verification for some purposes, and we will go to it in detail in later sections.Timestamp used to verify lock time for given 
+transaction and compute the difficulty for every 2016 blocks, we will goto it at later sections. Bits used to support the so call proof-of-work, we will discuss it later on, nonce is
+"number used only once", it also used in proof-of-work.
